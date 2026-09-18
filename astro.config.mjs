@@ -28,7 +28,12 @@ import baseLinks from './integrations/base-links.mjs';
  *  这里的默认值只用于本地开发预览。
  * ─────────────────────────────────────────────────────────────
  */
-const SITE_URL = process.env.SITE_URL ?? 'https://your-username.github.io';
+const SITE_URL = process.env.SITE_URL ?? 'https://konmins.github.io';
+/**
+ * 仓库名是 konmins.github.io（用户页仓库），站点部署在根路径。
+ * 如果你的仓库是别的名字（例如 githubBlog），这里要改成 '/<仓库名>/'。
+ * 线上构建不用管这里 —— GitHub Actions 会用 configure-pages 自动填。
+ */
 const BASE_PATH = process.env.BASE_PATH ?? '/';
 
 /** 把代码块 meta 里的 `title="MainActivity.kt"` 变成代码块顶部的文件名标签 */

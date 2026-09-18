@@ -38,7 +38,7 @@ export const PROJECTS: Project[] = [
 		status: '维护中',
 		featured: true,
 		links: [
-			{ label: 'GitHub', url: 'https://github.com/your-username/logpeek' },
+			{ label: 'GitHub', url: 'https://github.com/konmins/logpeek' },
 		],
 	},
 	{
@@ -52,7 +52,7 @@ export const PROJECTS: Project[] = [
 		status: '活跃开发',
 		featured: true,
 		links: [
-			{ label: 'GitHub', url: 'https://github.com/your-username/adb-toolkit' },
+			{ label: 'GitHub', url: 'https://github.com/konmins/adb-toolkit' },
 		],
 	},
 	{
@@ -66,8 +66,8 @@ export const PROJECTS: Project[] = [
 		status: '维护中',
 		featured: true,
 		links: [
-			{ label: 'GitHub', url: 'https://github.com/your-username/assetbox' },
-			{ label: '下载', url: 'https://github.com/your-username/assetbox/releases' },
+			{ label: 'GitHub', url: 'https://github.com/konmins/assetbox' },
+			{ label: '下载', url: 'https://github.com/konmins/assetbox/releases' },
 		],
 	},
 	{
@@ -80,7 +80,7 @@ export const PROJECTS: Project[] = [
 		year: '2024',
 		status: '已完成',
 		links: [
-			{ label: '在线使用', url: 'https://your-username.github.io/json2kotlin/' },
+			{ label: '在线使用', url: 'https://konmins.github.io/json2kotlin/' },
 		],
 	},
 	{
@@ -93,7 +93,7 @@ export const PROJECTS: Project[] = [
 		year: '2023',
 		status: '维护中',
 		links: [
-			{ label: 'GitHub', url: 'https://github.com/your-username/detekt-compose-rules' },
+			{ label: 'GitHub', url: 'https://github.com/konmins/detekt-compose-rules' },
 		],
 	},
 	{
@@ -104,7 +104,7 @@ export const PROJECTS: Project[] = [
 		year: '2026',
 		status: '维护中',
 		links: [
-			{ label: '源码', url: 'https://github.com/your-username/githubBlog' },
+			{ label: '源码', url: 'https://github.com/konmins/konmins.github.io' },
 		],
 	},
 ];

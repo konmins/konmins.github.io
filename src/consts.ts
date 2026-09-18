@@ -129,7 +129,7 @@ export const CATEGORY_META: Record<
  */
 export const GISCUS = {
 	enabled: false,
-	repo: 'your-username/your-repo',
+	repo: 'konmins/konmins.github.io',
 	repoId: '',
 	category: 'Announcements',
 	categoryId: '',
