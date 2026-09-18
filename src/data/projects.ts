@@ -2,6 +2,11 @@
  * 「项目」页的数据源。
  * 这里是我自己写过的工具和开源项目——包括 Android 的，也包括跑在桌面端、命令行、浏览器里的。
  * 增删条目只改这个文件即可。
+ *
+ * 注意：下面是模板自带的示例项目，暂时没有对应的公开仓库，所以去掉了 links 字段
+ * （留着的话点进去会 404）。等仓库建好后按这个格式加回来：
+ *
+ *   links: [{ label: 'GitHub', url: 'https://github.com/konmins/仓库名' }],
  */
 
 export type ProjectStatus = '活跃开发' | '维护中' | '已完成' | '暂停';
@@ -37,9 +42,6 @@ export const PROJECTS: Project[] = [
 		year: '2025',
 		status: '维护中',
 		featured: true,
-		links: [
-			{ label: 'GitHub', url: 'https://github.com/konmins/logpeek' },
-		],
 	},
 	{
 		name: 'adb-toolkit',
@@ -51,9 +53,6 @@ export const PROJECTS: Project[] = [
 		year: '2025',
 		status: '活跃开发',
 		featured: true,
-		links: [
-			{ label: 'GitHub', url: 'https://github.com/konmins/adb-toolkit' },
-		],
 	},
 	{
 		name: 'AssetBox',
@@ -65,10 +64,6 @@ export const PROJECTS: Project[] = [
 		year: '2024',
 		status: '维护中',
 		featured: true,
-		links: [
-			{ label: 'GitHub', url: 'https://github.com/konmins/assetbox' },
-			{ label: '下载', url: 'https://github.com/konmins/assetbox/releases' },
-		],
 	},
 	{
 		name: 'JSON → Kotlin',
@@ -79,9 +74,6 @@ export const PROJECTS: Project[] = [
 		stack: ['TypeScript', 'Astro', 'WebAssembly'],
 		year: '2024',
 		status: '已完成',
-		links: [
-			{ label: '在线使用', url: 'https://konmins.github.io/json2kotlin/' },
-		],
 	},
 	{
 		name: 'Detekt Rule Pack',
@@ -92,9 +84,6 @@ export const PROJECTS: Project[] = [
 		stack: ['Kotlin', 'Detekt', 'PSI'],
 		year: '2023',
 		status: '维护中',
-		links: [
-			{ label: 'GitHub', url: 'https://github.com/konmins/detekt-compose-rules' },
-		],
 	},
 	{
 		name: '这个博客',
