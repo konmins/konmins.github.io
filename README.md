@@ -77,21 +77,21 @@ export const SOCIALS = [
 
 ### 步骤
 
-1. 在 GitHub 上新建一个仓库（**不要**勾选 Add README）。
+1. 在 GitHub 上新建一个**公开**仓库。**不要**勾选 Add README / .gitignore / license，保持空仓库。
 
-2. 在项目目录里初始化并推送：
+2. **先在仓库里开启 Pages**：Settings → Pages → 把 **Source** 改成 **`GitHub Actions`**。
+
+   顺序很重要：先开启再推送，第一次 workflow 就能一次跑通。
+
+3. 本地仓库已经初始化好并完成了首次提交（分支 `main`）。关联远程仓库后推送即可：
 
    ```bash
-   git init -b main
-   git add .
-   git commit -m "chore: 初始化博客"
    git remote add origin https://github.com/你的用户名/你的仓库名.git
    git push -u origin main
    ```
 
-3. 打开仓库的 **Settings → Pages**，把 **Source** 从 `Deploy from a branch` 改成 **`GitHub Actions`**。
-
-4. 回到 **Actions** 页面，等「构建并部署到 GitHub Pages」跑完（第一次大约 1 分钟）。
+4. 回到仓库的 **Actions** 页面，等「构建并部署到 GitHub Pages」跑完（首次约 1 分钟）。
+   构建日志里会打印识别到的「站点地址」和「子路径」，可以顺手核对一下。
 
 5. 访问站点：
    - 仓库名是 `你的用户名.github.io` → `https://你的用户名.github.io/`
@@ -105,7 +105,7 @@ GitHub Pages 有个坑：只有仓库名为 `<用户名>.github.io` 时站点才
 
 这个项目里有两层处理，正常使用不需要你操心：
 
-1. `.github/workflows/deploy.yml` 会根据仓库名自动算出 `SITE_URL` 和 `BASE_PATH` 传给构建；
+1. `.github/workflows/deploy.yml` 用官方 action `actions/configure-pages` 读取仓库的 Pages 配置，拿到站点地址和子路径传给构建 —— 所以**绑定自定义域名后也能自动识别**，不用改任何东西；
 2. `integrations/base-links.mjs` 会在构建结束后，给 Markdown 正文里手写的 `[链接](/about/)` 补上前缀 —— 因为 **Astro 的 `base` 配置不会改写 Markdown 里写死的绝对路径**。
 
 如果本地想模拟子路径部署：
@@ -222,14 +222,16 @@ val e = 5 // [!code error]
    - 根域名 → 4 条 A 记录指向 `185.199.108.153`、`185.199.109.153`、`185.199.110.153`、`185.199.111.153`
    - 子域名 → 一条 CNAME 指向 `你的用户名.github.io`
 3. 仓库 **Settings → Pages → Custom domain** 填上域名并保存，等证书签发。
-4. 改一下 `astro.config.mjs` 顶部的默认值（这样本地构建也用的是正式域名）：
+4. 到 **Actions** 页面手动重跑一次 workflow（或用空提交触发一次）。
 
-   ```js
-   const SITE_URL = process.env.SITE_URL ?? 'https://blog.example.com';
-   const BASE_PATH = process.env.BASE_PATH ?? '/';
-   ```
+第 4 步就够了：workflow 里的 `actions/configure-pages` 会重新读取仓库的 Pages 配置，自动把站点地址换成新域名、把子路径改成根路径。**不需要改任何代码。**
 
-   用自定义域名时站点在根路径，Workflow 里算出的 `BASE_PATH` 会是 `/你的仓库名/`，需要覆盖掉。最省事的做法是在仓库 **Settings → Secrets and variables → Actions → Variables** 里加两个变量 `SITE_URL` 和 `BASE_PATH`，然后把 workflow 里那两行的值改成 `${{ vars.SITE_URL }}` / `${{ vars.BASE_PATH }}`。
+只有一种情况需要动配置：你想让本地 `npm run build` 也用正式域名，那就改 `astro.config.mjs` 顶部的默认值：
+
+```js
+const SITE_URL = process.env.SITE_URL ?? 'https://blog.example.com';
+const BASE_PATH = process.env.BASE_PATH ?? '/';
+```
 
 ---
 
