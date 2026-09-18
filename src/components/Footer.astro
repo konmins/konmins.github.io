@@ -1,0 +1,61 @@
+---
+import { SITE, SOCIALS } from '@/consts';
+import { withBase } from '@/utils/url';
+import Icon from './Icon.astro';
+
+const year = new Date().getFullYear();
+const links = SOCIALS.map((item) => ({
+	...item,
+	href: item.url.startsWith('/') ? withBase(item.url) : item.url,
+}));
+---
+
+<footer class="footer">
+	<div class="container footer__inner">
+		<div class="footer__meta">
+			<div>© {year} {SITE.author}</div>
+			<div>
+				基于 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 构建 · 托管于
+				<a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a>
+			</div>
+		</div>
+
+		<nav class="footer__links" aria-label="页脚导航">
+			{
+				links.map((item) => (
+					<a
+						class="footer__link"
+						href={item.href}
+						target={item.url.startsWith('http') ? '_blank' : undefined}
+						rel={item.url.startsWith('http') ? 'noopener' : undefined}
+					>
+						<Icon name={item.icon} />
+						<span>{item.name}</span>
+					</a>
+				))
+			}
+			<a class="footer__link" href={withBase('/archive/')}>
+				<Icon name="archive" />
+				<span>归档</span>
+			</a>
+		</nav>
+	</div>
+</footer>
+
+<button type="button" class="to-top" data-to-top aria-label="回到顶部" title="回到顶部">
+	<Icon name="chevron-up" />
+</button>
+
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-to-top]');
+	if (button) {
+		const update = () => {
+			button.dataset.visible = String(window.scrollY > 600);
+		};
+		button.addEventListener('click', () => {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		});
+		window.addEventListener('scroll', update, { passive: true });
+		update();
+	}
+</script>

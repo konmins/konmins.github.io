@@ -1,0 +1,45 @@
+---
+import { CATEGORY_META } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { collectCategories, getPosts } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+const categories = collectCategories(posts);
+---
+
+<BaseLayout title="分类" description="按主题浏览全部文章：Android、Kotlin、Compose、工具与工程实践。">
+	<div class="container">
+		<header class="page-head">
+			<h1 class="page-head__title">分类</h1>
+			<p class="page-head__desc">共 {categories.length} 个分类。比起标签，分类更粗粒度一些。</p>
+		</header>
+
+		{
+			categories.length === 0 ? (
+				<p class="empty-state">还没有任何分类。</p>
+			) : (
+				<div class="term-grid">
+					{categories.map((term) => {
+						const meta = CATEGORY_META[term.name];
+						return (
+							<a class="term-card" href={withBase(`/categories/${term.slug}/`)}>
+								<div class="term-card__head">
+									<span class="term-card__name">
+										<span
+											class="term-card__dot"
+											style={meta ? `background: ${meta.accent}` : undefined}
+										/>
+										{term.name}
+									</span>
+									<span class="term-card__count">{term.count} 篇</span>
+								</div>
+								{meta?.description && <span class="term-card__desc">{meta.description}</span>}
+							</a>
+						);
+					})}
+				</div>
+			)
+		}
+	</div>
+</BaseLayout>

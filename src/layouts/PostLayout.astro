@@ -1,0 +1,265 @@
+---
+import '@/styles/prose.css';
+import type { MarkdownHeading } from 'astro';
+import Comments from '@/components/Comments.astro';
+import FormattedDate from '@/components/FormattedDate.astro';
+import Icon from '@/components/Icon.astro';
+import PostCard from '@/components/PostCard.astro';
+import TableOfContents from '@/components/TableOfContents.astro';
+import { GISCUS } from '@/consts';
+import type { Post } from '@/utils/posts';
+import { categoryHref, postHref, readingMinutes, tagHref } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+	post: Post;
+	headings: MarkdownHeading[];
+	prev?: Post;
+	next?: Post;
+	related?: Post[];
+	seriesPosts?: Post[];
+}
+
+const { post, headings, prev, next, related = [], seriesPosts = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, category, tags, series } = post.data;
+
+const tocItems = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
+const inSeries = series && seriesPosts.length > 1;
+const showUpdated = updatedDate && updatedDate.valueOf() - pubDate.valueOf() > 24 * 60 * 60 * 1000;
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	type="article"
+	publishedTime={pubDate}
+	modifiedTime={updatedDate}
+	tags={tags}
+>
+	<div class="reading-progress" aria-hidden="true">
+		<div class="reading-progress__bar" data-progress></div>
+	</div>
+
+	<div class="container">
+		<div class:list={['post-layout', tocItems.length > 0 && 'has-toc']}>
+			<div class="post-main">
+				<article>
+					<header class="post-header">
+						<nav class="breadcrumb" aria-label="面包屑">
+							<a href={withBase('/blog/')}>文章</a>
+							<Icon name="chevron-right" size={12} />
+							<a href={categoryHref(category)}>{category}</a>
+						</nav>
+
+						<h1 class="post-title">{title}</h1>
+						<p class="post-lead">{description}</p>
+
+						<div class="post-meta meta">
+							<span class="meta__item">
+								<Icon name="calendar" />
+								<FormattedDate date={pubDate} format="cn" />
+							</span>
+							<span class="meta__dot"></span>
+							<span class="meta__item">
+								<Icon name="clock" />
+								约 {readingMinutes(post)} 分钟读完
+							</span>
+							{
+								series && (
+									<>
+										<span class="meta__dot"></span>
+										<span class="meta__item">系列：{series}</span>
+									</>
+								)
+							}
+						</div>
+
+						{
+							tags.length > 0 && (
+								<div class="post-tags">
+									{tags.map((tag) => (
+										<a class="pill" href={tagHref(tag)}>
+											#{tag}
+										</a>
+									))}
+								</div>
+							)
+						}
+					</header>
+
+					<div class="prose">
+						<slot />
+					</div>
+
+					<footer class="post-footer">
+						{
+							showUpdated && updatedDate && (
+								<p class="post-updated">
+									<Icon name="clock" />
+									本文于 <FormattedDate date={updatedDate} /> 有过更新
+								</p>
+							)
+						}
+
+						{
+							inSeries && (
+								<section class="post-series">
+									<h2 class="post-series__title">「{series}」系列</h2>
+									<ol class="post-series__list">
+										{seriesPosts.map((item, index) => (
+											<li>
+												<span class="post-series__index">
+													{String(index + 1).padStart(2, '0')}
+												</span>
+												{item.id === post.id ? (
+													<span aria-current="page">{item.data.title}</span>
+												) : (
+													<a href={postHref(item)}>{item.data.title}</a>
+												)}
+											</li>
+										))}
+									</ol>
+								</section>
+							)
+						}
+
+						<nav class="post-nav" aria-label="上下篇导航">
+							{
+								prev ? (
+									<a class="post-nav__item" href={postHref(prev)}>
+										<span class="post-nav__label">
+											<Icon name="arrow-left" size={13} />
+											上一篇
+										</span>
+										<span class="post-nav__title">{prev.data.title}</span>
+									</a>
+								) : (
+									<span class="post-nav__item post-nav__placeholder">
+										<span class="post-nav__label">上一篇</span>
+										<span class="post-nav__title">已经是最新的文章了</span>
+									</span>
+								)
+							}
+							{
+								next ? (
+									<a class="post-nav__item post-nav__item--next" href={postHref(next)}>
+										<span class="post-nav__label">
+											下一篇
+											<Icon name="arrow-right" size={13} />
+										</span>
+										<span class="post-nav__title">{next.data.title}</span>
+									</a>
+								) : (
+									<span class="post-nav__item post-nav__item--next post-nav__placeholder">
+										<span class="post-nav__label">下一篇</span>
+										<span class="post-nav__title">已经是最早的文章了</span>
+									</span>
+								)
+							}
+						</nav>
+
+						{
+							related.length > 0 && (
+								<section class="post-related">
+									<div class="section__head">
+										<h2 class="section__title">相关文章</h2>
+									</div>
+									<div class="post-list">
+										{related.map((item) => (
+											<PostCard post={item} />
+										))}
+									</div>
+								</section>
+							)
+						}
+
+						{GISCUS.enabled && <Comments />}
+					</footer>
+				</article>
+			</div>
+
+			{tocItems.length > 0 && <TableOfContents headings={headings} />}
+		</div>
+	</div>
+</BaseLayout>
+
+<script>
+	const progressBar = document.querySelector<HTMLElement>('[data-progress]');
+	const tocLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+	const prose = document.querySelector<HTMLElement>('.prose');
+
+	// 给正文标题补一个可点击的锚点
+	if (prose) {
+		for (const heading of prose.querySelectorAll<HTMLHeadingElement>('h2[id], h3[id], h4[id]')) {
+			const anchor = document.createElement('a');
+			anchor.className = 'heading-anchor';
+			anchor.href = `#${heading.id}`;
+			anchor.textContent = '#';
+			anchor.setAttribute('aria-label', `本文锚点：${heading.textContent ?? ''}`);
+			heading.append(anchor);
+		}
+	}
+
+	const targets = tocLinks
+		.map((link) => {
+			const id = link.getAttribute('href')?.slice(1);
+			if (!id) return null;
+			const element = document.getElementById(id);
+			return element ? { link, element } : null;
+		})
+		.filter((item): item is { link: HTMLAnchorElement; element: HTMLElement } => item !== null);
+
+	let scheduled = false;
+
+	function update() {
+		scheduled = false;
+
+		// 阅读进度
+		if (progressBar) {
+			const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+			const ratio = scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 0;
+			progressBar.style.transform = `scaleX(${ratio})`;
+		}
+
+		// 目录高亮：找最后一个已经滚过顶部的标题
+		if (targets.length === 0) return;
+		const offset = 140;
+		let current = targets[0];
+		for (const target of targets) {
+			if (target.element.getBoundingClientRect().top <= offset) current = target;
+			else break;
+		}
+		if (current.link.dataset.active === 'true') return;
+
+		for (const { link } of targets) {
+			link.classList.remove('is-active');
+			link.removeAttribute('aria-current');
+			delete link.dataset.active;
+		}
+		current.link.classList.add('is-active');
+		current.link.dataset.active = 'true';
+		current.link.setAttribute('aria-current', 'location');
+
+		// 目录很长时自己滚动，保证当前项可见
+		// （不能用 scrollIntoView，那会连带把页面也滚走）
+		const toc = current.link.closest<HTMLElement>('[data-toc]');
+		if (toc && toc.scrollHeight > toc.clientHeight) {
+			const tocRect = toc.getBoundingClientRect();
+			const linkRect = current.link.getBoundingClientRect();
+			if (linkRect.top < tocRect.top || linkRect.bottom > tocRect.bottom) {
+				toc.scrollTop += linkRect.top - tocRect.top - toc.clientHeight / 2 + linkRect.height / 2;
+			}
+		}
+	}
+
+	function onScroll() {
+		if (scheduled) return;
+		scheduled = true;
+		requestAnimationFrame(update);
+	}
+
+	window.addEventListener('scroll', onScroll, { passive: true });
+	window.addEventListener('resize', onScroll, { passive: true });
+	update();
+</script>

@@ -1,0 +1,155 @@
+---
+import Icon from '@/components/Icon.astro';
+import PostCard from '@/components/PostCard.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+import { SITE, SOCIALS } from '@/consts';
+import { PROJECTS } from '@/data/projects';
+import { collectCategories, collectTags, getPosts } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const posts = await getPosts();
+const featured = posts.filter((post) => post.data.featured).slice(0, 4);
+const latest = posts.slice(0, 6);
+const categories = collectCategories(posts);
+const tags = collectTags(posts);
+const projects = PROJECTS.filter((project) => project.featured).slice(0, 3);
+
+const socials = SOCIALS.map((item) => ({
+	...item,
+	href: item.url.startsWith('/') ? withBase(item.url) : item.url,
+	external: item.url.startsWith('http'),
+}));
+
+const stats = [
+	{ num: posts.length, label: '篇文章' },
+	{ num: categories.length, label: '个分类' },
+	{ num: tags.length, label: '个标签' },
+	{ num: PROJECTS.length, label: '个项目' },
+];
+---
+
+<BaseLayout>
+	<section class="hero">
+		<div class="container">
+			<p class="hero__eyebrow">
+				<span class="hero__status" aria-hidden="true"></span>
+				{SITE.tagline}
+			</p>
+
+			<h1 class="hero__title">
+				你好，我是 <span class="hero__gradient">{SITE.author}</span>
+			</h1>
+
+			<p class="hero__lead">{SITE.heroDescription}</p>
+
+			<div class="hero__actions">
+				<a class="btn btn--primary" href={withBase('/blog/')}>
+					开始阅读
+					<Icon name="arrow-right" />
+				</a>
+				<a class="btn btn--ghost" href={withBase('/projects/')}>看看我的工具</a>
+				{
+					socials
+						.filter((item) => item.external)
+						.map((item) => (
+							<a class="btn btn--ghost" href={item.href} target="_blank" rel="noopener">
+								<Icon name={item.icon} />
+								{item.name}
+							</a>
+						))
+				}
+			</div>
+
+			<div class="stats">
+				{
+					stats.map((item) => (
+						<div class="stats__item">
+							<span class="stats__num">{item.num}</span>
+							<span class="stats__label">{item.label}</span>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<div class="container">
+		{
+			featured.length > 0 && (
+				<section class="section">
+					<div class="section__head">
+						<h2 class="section__title">精选文章</h2>
+						<a class="section__more" href={withBase('/blog/')}>
+							全部文章
+							<Icon name="arrow-right" size={14} />
+						</a>
+					</div>
+					<div class="post-list post-list--grid">
+						{featured.map((post) => (
+							<PostCard post={post} />
+						))}
+					</div>
+				</section>
+			)
+		}
+
+		{
+			latest.length > 0 && (
+				<section class="section">
+					<div class="section__head">
+						<h2 class="section__title">最近更新</h2>
+						<a class="section__more" href={withBase('/archive/')}>
+							全部归档
+							<Icon name="arrow-right" size={14} />
+						</a>
+					</div>
+					<div class="post-list">
+						{latest.map((post) => (
+							<PostCard post={post} />
+						))}
+					</div>
+				</section>
+			)
+		}
+
+		{
+			projects.length > 0 && (
+				<section class="section">
+					<div class="section__head">
+						<h2 class="section__title">折腾过的东西</h2>
+						<a class="section__more" href={withBase('/projects/')}>
+							全部项目
+							<Icon name="arrow-right" size={14} />
+						</a>
+					</div>
+					<div class="project-grid">
+						{projects.map((project) => (
+							<ProjectCard project={project} />
+						))}
+					</div>
+				</section>
+			)
+		}
+
+		{
+			categories.length > 0 && (
+				<section class="section">
+					<div class="section__head">
+						<h2 class="section__title">按分类浏览</h2>
+					</div>
+					<div class="term-grid">
+						{categories.map((term) => (
+							<a class="term-card" href={withBase(`/categories/${term.slug}/`)}>
+								<div class="term-card__head">
+									<span class="term-card__name">{term.name}</span>
+									<span class="term-card__count">{term.count} 篇</span>
+								</div>
+							</a>
+						))}
+					</div>
+				</section>
+			)
+		}
+	</div>
+</BaseLayout>

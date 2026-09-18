@@ -1,0 +1,138 @@
+---
+import Icon from '@/components/Icon.astro';
+import { SITE, SOCIALS } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPosts } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+
+const socials = SOCIALS.filter((item) => item.url.startsWith('http') || item.url.startsWith('mailto'));
+
+const skillGroups = [
+	{
+		title: 'Android',
+		items: ['Kotlin', 'Jetpack Compose', 'Coroutines / Flow', 'Room', 'Hilt', 'Gradle 插件', '性能优化'],
+	},
+	{
+		title: '跨平台与后端向',
+		items: ['Kotlin Multiplatform', 'Rust', 'TypeScript', 'Node.js', 'Python'],
+	},
+	{
+		title: '工具链',
+		items: ['Git', 'GitHub Actions', 'Detekt', 'Shell', 'Astro'],
+	},
+];
+
+const now = [
+	'把 Compose 的重组问题啃得更透一点，正在整理一套可以落地的性能检查清单',
+	'在给几个自用小工具补测试和发布流程，让它们更像「产品」而不是「脚本」',
+	'顺手把 Kotlin Multiplatform 用到实际项目里，而不只是写 demo',
+];
+---
+
+<BaseLayout title="关于" description={`关于 ${SITE.author}：一名 Android 开发者，偶尔写点其他平台的工具。`}>
+	<div class="container">
+		<header class="page-head">
+			<h1 class="page-head__title">关于我</h1>
+			<p class="page-head__desc">{SITE.tagline}</p>
+		</header>
+
+		<div class="about-grid">
+			<div class="prose">
+				<h2>我是谁</h2>
+				<p>
+					一名 Android 开发者，日常在 Kotlin 和 Jetpack Compose 里讨生活。喜欢把重复的事情自动化掉，
+					所以除了 App，也会写一些跑在桌面端、命令行和浏览器里的小工具——工具的价值不在于用了什么技术，
+					而在于它是不是真的省下了时间。
+				</p>
+
+				<h2>这个博客写什么</h2>
+				<p>
+					主要是三类内容：一是 Android / Kotlin / Compose 的实践笔记，尤其是踩过的坑和性能问题；
+					二是自己写工具的过程与取舍，包括为什么有时候会从 Kotlin 换到 Rust 或 TypeScript；
+					三是一些不成体系的思考和总结。
+				</p>
+				<p>
+					写下来的目的很简单：一是怕自己忘，二是如果能让另一个人在搜同一个报错时少花半小时，那就值了。
+				</p>
+
+				<h2>技术栈</h2>
+				<p>
+					最熟悉的是 Android 那一套。近几年开始把 Kotlin 用到 Android 之外的地方，
+					也慢慢接受「合适的工具解决合适的问题」这件事——不是所有东西都该用 Kotlin 写。
+				</p>
+
+				<h2>现在在做什么</h2>
+				<ul>
+					{now.map((item) => <li>{item}</li>)}
+				</ul>
+
+				<h2>联系我</h2>
+				<p>
+					有问题或者想聊聊，欢迎到 GitHub 开 issue，或者直接发邮件。
+					也可以订阅 <a href={withBase('/rss.xml')}>RSS</a>。
+				</p>
+			</div>
+
+			<aside class="about-aside">
+				<div class="aside-block">
+					<h2 class="aside-block__title">速览</h2>
+					<div class="aside-list">
+						<div class="aside-list__row">
+							<span class="aside-list__key">方向</span>
+							<span>Android / 工具开发</span>
+						</div>
+						<div class="aside-list__row">
+							<span class="aside-list__key">主力语言</span>
+							<span>Kotlin</span>
+						</div>
+						<div class="aside-list__row">
+							<span class="aside-list__key">文章</span>
+							<span>{posts.length} 篇</span>
+						</div>
+						<div class="aside-list__row">
+							<span class="aside-list__key">状态</span>
+							<span>可交流</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="aside-block">
+					<h2 class="aside-block__title">找到我</h2>
+					<div class="aside-list">
+						{
+							socials.map((item) => (
+								<a
+									class="footer__link"
+									href={item.url}
+									target={item.url.startsWith('http') ? '_blank' : undefined}
+									rel={item.url.startsWith('http') ? 'noopener' : undefined}
+								>
+									<Icon name={item.icon} />
+									<span>{item.name}</span>
+								</a>
+							))
+						}
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<section class="section">
+			<div class="section__head">
+				<h2 class="section__title">技能点</h2>
+			</div>
+			{
+				skillGroups.map((group) => (
+					<div class="skill-group">
+						<h3 class="skill-group__title">{group.title}</h3>
+						<div class="tag-cloud">
+							{group.items.map((item) => <span class="tag-cloud__item">{item}</span>)}
+						</div>
+					</div>
+				))
+			}
+		</section>
+	</div>
+</BaseLayout>

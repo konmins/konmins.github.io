@@ -1,0 +1,29 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+	headings: MarkdownHeading[];
+	/** 最多显示几级标题 */
+	maxDepth?: number;
+}
+
+const { headings, maxDepth = 3 } = Astro.props;
+const items = headings.filter((heading) => heading.depth >= 2 && heading.depth <= maxDepth);
+---
+
+{
+	items.length > 0 && (
+		<details class="toc" open data-toc>
+			<summary class="toc__summary">目录</summary>
+			<ul class="toc__list">
+				{items.map((heading) => (
+					<li class:list={['toc__item', `toc__item--${heading.depth}`]}>
+						<a class="toc__link" href={`#${heading.slug}`} data-toc-link>
+							{heading.text}
+						</a>
+					</li>
+				))}
+			</ul>
+		</details>
+	)
+}

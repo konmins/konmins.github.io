@@ -1,0 +1,47 @@
+---
+import type { Post } from '@/utils/posts';
+import { categoryHref, postHref, readingMinutes, tagHref } from '@/utils/posts';
+import FormattedDate from './FormattedDate.astro';
+import Icon from './Icon.astro';
+
+interface Props {
+	post: Post;
+	/** 卡片上最多展示几个标签 */
+	maxTags?: number;
+}
+
+const { post, maxTags = 3 } = Astro.props;
+const { title, description, pubDate, category, tags } = post.data;
+const shownTags = tags.slice(0, maxTags);
+---
+
+<article class="post-card">
+	<div class="post-card__top">
+		<a class="pill pill--accent" href={categoryHref(category)}>{category}</a>
+		<span class="meta"><FormattedDate date={pubDate} /></span>
+	</div>
+
+	<h3 class="post-card__title">
+		<a href={postHref(post)}>{title}</a>
+	</h3>
+
+	<p class="post-card__desc">{description}</p>
+
+	<div class="post-card__foot">
+		<div class="post-card__tags">
+			{
+				shownTags.map((tag) => (
+					<a class="pill" href={tagHref(tag)}>
+						#{tag}
+					</a>
+				))
+			}
+		</div>
+		<span class="meta">
+			<span class="meta__item">
+				<Icon name="clock" />
+				{readingMinutes(post)} 分钟
+			</span>
+		</span>
+	</div>
+</article>

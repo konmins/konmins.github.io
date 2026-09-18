@@ -1,0 +1,28 @@
+---
+import type { Post } from '@/utils/posts';
+import Pagination from './Pagination.astro';
+import PostCard from './PostCard.astro';
+
+interface Props {
+	posts: Post[];
+	currentPage: number;
+	totalPages: number;
+}
+
+const { posts, currentPage, totalPages } = Astro.props;
+---
+
+{
+	posts.length === 0 ? (
+		<p class="empty-state">这里还没有文章。</p>
+	) : (
+		<>
+			<div class="post-list">
+				{posts.map((post) => (
+					<PostCard post={post} />
+				))}
+			</div>
+			<Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/blog/" />
+		</>
+	)
+}

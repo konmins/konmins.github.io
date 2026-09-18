@@ -1,0 +1,201 @@
+---
+import Icon from '@/components/Icon.astro';
+import { toISODate } from '@/utils/date';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPosts, postHref } from '@/utils/posts';
+
+const posts = await getPosts();
+
+/** 把 Markdown 压成纯文本，供浏览器端全文检索 */
+function toPlainText(markdown: string): string {
+	return markdown
+		.replace(/```[\s\S]*?```/g, ' ')
+		.replace(/`([^`]*)`/g, '$1')
+		.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+		.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+		.replace(/^\s*#{1,6}\s*/gm, '')
+		.replace(/^\s*>\s?/gm, '')
+		.replace(/^\s*[-*+]\s+/gm, '')
+		.replace(/^\s*\d+\.\s+/gm, '')
+		.replace(/<\/?[a-zA-Z][^>]*>/g, ' ')
+		.replace(/[*_~|]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+// 每篇最多取 3000 字，够搜就行，避免页面体积失控
+const searchIndex = posts.map((post) => ({
+	title: post.data.title,
+	description: post.data.description,
+	url: postHref(post),
+	category: post.data.category,
+	tags: post.data.tags,
+	date: toISODate(post.data.pubDate),
+	text: toPlainText(post.body ?? '').slice(0, 3000),
+}));
+
+// 转义 < 防止正文里的 </script> 提前闭合标签
+const payload = JSON.stringify(searchIndex).replace(/</g, '\\u003c');
+---
+
+<BaseLayout
+	title="搜索"
+	description="在全站文章里搜索关键词，支持标题、标签、摘要与正文全文检索。"
+>
+	<div class="container container--narrow">
+		<header class="page-head">
+			<h1 class="page-head__title">搜索</h1>
+			<p class="page-head__desc">在 {posts.length} 篇文章里全文检索，结果按相关度排序。</p>
+		</header>
+
+		<div class="search-box">
+			<Icon name="search" class="search-box__icon" />
+			<label class="sr-only" for="search-input">搜索关键词</label>
+			<input
+				class="search-input"
+				id="search-input"
+				type="search"
+				placeholder="比如：Compose 重组、协程、Rust…"
+				autocomplete="off"
+				spellcheck="false"
+				data-search-input
+			/>
+		</div>
+
+		<p class="meta" data-search-status></p>
+		<div class="post-list" data-search-results style="margin-top: 1rem;"></div>
+	</div>
+
+	<script is:inline type="application/json" id="search-data" set:html={payload}></script>
+</BaseLayout>
+
+<script>
+	interface SearchItem {
+		title: string;
+		description: string;
+		url: string;
+		category: string;
+		tags: string[];
+		date: string;
+		text: string;
+	}
+
+	const dataElement = document.getElementById('search-data');
+	const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+	const results = document.querySelector<HTMLElement>('[data-search-results]');
+	const status = document.querySelector<HTMLElement>('[data-search-status]');
+
+	if (dataElement && input && results && status) {
+		const items: SearchItem[] = JSON.parse(dataElement.textContent || '[]');
+
+		const escapeHtml = (value: string) =>
+			value.replace(/[&<>"]/g, (char) => {
+				switch (char) {
+					case '&':
+						return '&amp;';
+					case '<':
+						return '&lt;';
+					case '>':
+						return '&gt;';
+					default:
+						return '&quot;';
+				}
+			});
+
+		const tokenize = (query: string) =>
+			query.toLowerCase().split(/\s+/).filter(Boolean);
+
+		/** 所有关键词都必须命中，标题/标签权重更高 */
+		function score(item: SearchItem, tokens: string[]): number {
+			const title = item.title.toLowerCase();
+			const description = item.description.toLowerCase();
+			const category = item.category.toLowerCase();
+			const tags = item.tags.map((tag) => tag.toLowerCase());
+			const text = item.text.toLowerCase();
+
+			let total = 0;
+			for (const token of tokens) {
+				let hit = 0;
+				if (title.includes(token)) hit += 12;
+				if (tags.some((tag) => tag.includes(token))) hit += 8;
+				if (description.includes(token)) hit += 5;
+				if (category.includes(token)) hit += 4;
+				if (text.includes(token)) hit += 2;
+				if (hit === 0) return 0;
+				total += hit;
+			}
+			return total;
+		}
+
+		function highlight(value: string, tokens: string[]): string {
+			let output = escapeHtml(value);
+			for (const token of tokens) {
+				if (token.length < 1) continue;
+				try {
+					const safe = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+					output = output.replace(new RegExp(`(${safe})`, 'gi'), '<mark>$1</mark>');
+				} catch {
+					/* 忽略非法正则 */
+				}
+			}
+			return output;
+		}
+
+		function render(list: SearchItem[], tokens: string[]) {
+			if (list.length === 0) {
+				results!.innerHTML =
+					'<p class="empty-state">没有找到匹配的文章。试试更短的关键词，或者去<a href="./tags/">标签页</a>翻翻。</p>';
+				return;
+			}
+
+			results!.innerHTML = list
+				.map(
+					(item) => `
+					<a class="search-result" href="${escapeHtml(item.url)}">
+						<div class="search-result__title">${highlight(item.title, tokens)}</div>
+						<div class="search-result__desc">${highlight(item.description, tokens)}</div>
+						<div class="meta" style="margin-top:0.5rem">
+							<span class="meta__item">${escapeHtml(item.category)}</span>
+							<span class="meta__dot"></span>
+							<span class="meta__item">${escapeHtml(item.date)}</span>
+						</div>
+					</a>`,
+				)
+				.join('');
+		}
+
+		function run(query: string, syncUrl = true) {
+			const trimmed = query.trim();
+			const tokens = tokenize(trimmed);
+
+			if (tokens.length === 0) {
+				status!.textContent = `共 ${items.length} 篇文章，输入关键词开始搜索`;
+				render(items.slice(0, 30), []);
+			} else {
+				const matched = items
+					.map((item) => ({ item, value: score(item, tokens) }))
+					.filter((entry) => entry.value > 0)
+					.sort((a, b) => b.value - a.value);
+				status!.textContent = matched.length
+					? `找到 ${matched.length} 篇相关文章`
+					: '没有匹配结果';
+				render(
+					matched.slice(0, 30).map((entry) => entry.item),
+					tokens,
+				);
+			}
+
+			if (syncUrl) {
+				const url = new URL(window.location.href);
+				if (trimmed) url.searchParams.set('q', trimmed);
+				else url.searchParams.delete('q');
+				window.history.replaceState(null, '', url);
+			}
+		}
+
+		const initial = new URLSearchParams(window.location.search).get('q') ?? '';
+		input.value = initial;
+		input.addEventListener('input', () => run(input.value));
+		run(initial, false);
+	}
+</script>

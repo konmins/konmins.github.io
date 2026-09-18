@@ -1,0 +1,44 @@
+---
+import type { GetStaticPaths } from 'astro';
+import PostListPage from '@/components/PostListPage.astro';
+import { POSTS_PER_PAGE } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPosts, paginate, type Post } from '@/utils/posts';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+	const posts = await getPosts();
+	const pages = paginate(posts, POSTS_PER_PAGE);
+
+	// 第 1 页由 /blog/ 负责，这里只生成第 2 页及以后
+	return pages.slice(1).map((pagePosts, index) => ({
+		params: { page: String(index + 2) },
+		props: {
+			posts: pagePosts,
+			currentPage: index + 2,
+			totalPages: pages.length,
+		},
+	}));
+};
+
+interface Props {
+	posts: Post[];
+	currentPage: number;
+	totalPages: number;
+}
+
+const { posts, currentPage, totalPages } = Astro.props;
+---
+
+<BaseLayout
+	title={`全部文章 · 第 ${currentPage} 页`}
+	description={`全部技术文章列表，第 ${currentPage} / ${totalPages} 页。`}
+>
+	<div class="container">
+		<header class="page-head">
+			<h1 class="page-head__title">全部文章</h1>
+			<p class="page-head__desc">第 {currentPage} / {totalPages} 页</p>
+		</header>
+
+		<PostListPage posts={posts} currentPage={currentPage} totalPages={totalPages} />
+	</div>
+</BaseLayout>

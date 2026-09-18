@@ -1,0 +1,39 @@
+---
+import PostListPage from '@/components/PostListPage.astro';
+import { POSTS_PER_PAGE } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { collectTags, getPosts, paginate } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+const pages = paginate(posts, POSTS_PER_PAGE);
+const tags = collectTags(posts).slice(0, 12);
+---
+
+<BaseLayout title="全部文章" description="按发布时间倒序排列的全部技术文章，涵盖 Android、Kotlin、Compose 与跨平台工具开发。">
+	<div class="container">
+		<header class="page-head">
+			<h1 class="page-head__title">全部文章</h1>
+			<p class="page-head__desc">
+				共 {posts.length} 篇，按发布时间倒序。也可以去
+				<a href={withBase('/archive/')}>归档</a> 或
+				<a href={withBase('/tags/')}>标签</a> 页面换个角度翻。
+			</p>
+
+			{
+				tags.length > 0 && (
+					<div class="tag-cloud" style="margin-top: 1.5rem;">
+						{tags.map((tag) => (
+							<a class="tag-cloud__item" href={withBase(`/tags/${tag.slug}/`)}>
+								{tag.name}
+								<span class="tag-cloud__count">{tag.count}</span>
+							</a>
+						))}
+					</div>
+				)
+			}
+		</header>
+
+		<PostListPage posts={pages[0]} currentPage={1} totalPages={pages.length} />
+	</div>
+</BaseLayout>

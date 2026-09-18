@@ -1,0 +1,48 @@
+---
+import type { GetStaticPaths } from 'astro';
+import PostCard from '@/components/PostCard.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { collectTags, getPosts, tagSlug, type Post, type Term } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+	const posts = await getPosts();
+	const tags = collectTags(posts);
+
+	return tags.map((term) => ({
+		params: { tag: term.slug },
+		props: {
+			term,
+			tagPosts: posts.filter((post) => post.data.tags.some((tag) => tagSlug(tag) === term.slug)),
+		},
+	}));
+};
+
+interface Props {
+	term: Term;
+	tagPosts: Post[];
+}
+
+const { term, tagPosts } = Astro.props;
+---
+
+<BaseLayout
+	title={`标签：${term.name}`}
+	description={`标签「${term.name}」下的全部文章，共 ${term.count} 篇。`}
+>
+	<div class="container">
+		<header class="page-head">
+			<nav class="breadcrumb" aria-label="面包屑">
+				<a href={withBase('/tags/')}>标签</a>
+				<span>/</span>
+				<span>{term.name}</span>
+			</nav>
+			<h1 class="page-head__title">#{term.name}</h1>
+			<p class="page-head__desc">共 {term.count} 篇相关文章。</p>
+		</header>
+
+		<div class="post-list">
+			{tagPosts.map((post) => <PostCard post={post} />)}
+		</div>
+	</div>
+</BaseLayout>

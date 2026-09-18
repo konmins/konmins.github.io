@@ -1,0 +1,13 @@
+---
+import { formatDate, formatDateCN, toISODate } from '@/utils/date';
+
+interface Props {
+	date: Date;
+	/** short → 2026-09-18；cn → 2026 年 9 月 18 日 */
+	format?: 'short' | 'cn';
+}
+
+const { date, format = 'short' } = Astro.props;
+---
+
+<time datetime={toISODate(date)}>{format === 'cn' ? formatDateCN(date) : formatDate(date)}</time>

@@ -1,0 +1,42 @@
+---
+import { formatDate } from '@/utils/date';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPosts, groupByYear } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+const groups = groupByYear(posts);
+---
+
+<BaseLayout title="归档" description="按年份归档的全部文章。">
+	<div class="container container--narrow">
+		<header class="page-head">
+			<h1 class="page-head__title">归档</h1>
+			<p class="page-head__desc">共 {posts.length} 篇文章，按年份倒序排列。</p>
+		</header>
+
+		{
+			groups.length === 0 ? (
+				<p class="empty-state">还没有任何文章。</p>
+			) : (
+				groups.map((group) => (
+					<section class="archive-year">
+						<h2 class="archive-year__title">
+							{group.year}
+							<span class="archive-year__count">{group.posts.length} 篇</span>
+						</h2>
+						<div class="archive-list">
+							{group.posts.map((post) => (
+								<a class="archive-item" href={withBase(`/blog/${post.id}/`)}>
+									<span class="archive-item__date">{formatDate(post.data.pubDate).slice(5)}</span>
+									<span class="archive-item__title">{post.data.title}</span>
+									<span class="archive-item__cat">{post.data.category}</span>
+								</a>
+							))}
+						</div>
+					</section>
+				))
+			)
+		}
+	</div>
+</BaseLayout>

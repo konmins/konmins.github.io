@@ -1,0 +1,59 @@
+---
+import type { Project, ProjectStatus } from '@/data/projects';
+import Icon from './Icon.astro';
+
+interface Props {
+	project: Project;
+	/** 是否展示详细介绍 */
+	detailed?: boolean;
+}
+
+const { project, detailed = false } = Astro.props;
+
+const statusTone: Record<ProjectStatus, string> = {
+	活跃开发: 'active',
+	维护中: 'maintained',
+	已完成: 'done',
+	暂停: 'paused',
+};
+
+const monogram = project.name.replace(/[^A-Za-z0-9\u4e00-\u9fff]/g, '').charAt(0).toUpperCase();
+---
+
+<article class="project-card" data-platform={project.platform}>
+	<div class="project-card__head">
+		<span class="project-card__mono" aria-hidden="true">{monogram}</span>
+		<div>
+			<h3 class="project-card__name">{project.name}</h3>
+			<p class="project-card__platform">{project.platform} · {project.year}</p>
+		</div>
+	</div>
+
+	<p class="project-card__summary">{project.summary}</p>
+
+	{detailed && project.description && <p class="project-card__desc">{project.description}</p>}
+
+	<div class="project-card__stack">
+		{project.stack.map((item) => <span class="pill">{item}</span>)}
+	</div>
+
+	<div class="project-card__foot">
+		<span class:list={['status', `status--${statusTone[project.status]}`]}>
+			<span class="status__dot"></span>
+			{project.status}
+		</span>
+
+		{
+			project.links && project.links.length > 0 && (
+				<div class="project-links">
+					{project.links.map((link) => (
+						<a class="link-chip" href={link.url} target="_blank" rel="noopener">
+							{link.label}
+							<Icon name="external" size={12} />
+						</a>
+					))}
+				</div>
+			)
+		}
+	</div>
+</article>

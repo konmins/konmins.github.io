@@ -1,0 +1,116 @@
+---
+import { NAV, SITE } from '@/consts';
+import { withBase } from '@/utils/url';
+import Icon from './Icon.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+// 去掉 base 前缀，得到站点内的相对路径，用于判断导航高亮
+const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+const rawPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const current =
+	base && rawPath.startsWith(base) ? rawPath.slice(base.length) || '/' : rawPath;
+
+function isActive(href: string): boolean {
+	const target = href.replace(/\/+$/, '') || '/';
+	if (target === '/') return current === '/';
+	return current === target || current.startsWith(`${target}/`);
+}
+
+const initial = SITE.title.trim().charAt(0).toUpperCase();
+---
+
+<header class="header">
+	<div class="container header__inner">
+		<a class="header__brand" href={withBase('/')} aria-label={`${SITE.title} 首页`}>
+			<span class="header__mark" aria-hidden="true">{initial}</span>
+			<span>{SITE.title}</span>
+		</a>
+
+		<button
+			type="button"
+			class="icon-btn header__toggle"
+			data-nav-toggle
+			aria-label="打开导航菜单"
+			aria-expanded="false"
+			aria-controls="site-nav"
+		>
+			<Icon name="menu" class="nav-icon-menu" />
+			<Icon name="close" class="nav-icon-close" />
+		</button>
+
+		<nav class="header__nav" id="site-nav" data-nav>
+			{
+				NAV.map((item) => (
+					<a
+						class="header__link"
+						href={withBase(item.href)}
+						aria-current={isActive(item.href) ? 'page' : undefined}
+					>
+						{item.label}
+					</a>
+				))
+			}
+		</nav>
+
+		<div class="header__actions">
+			<a class="icon-btn" href={withBase('/search/')} aria-label="搜索文章" title="搜索">
+				<Icon name="search" />
+			</a>
+			<a
+				class="icon-btn"
+				href={withBase('/rss.xml')}
+				aria-label="RSS 订阅"
+				title="RSS 订阅"
+				target="_blank"
+				rel="noopener"
+			>
+				<Icon name="rss" />
+			</a>
+			<ThemeToggle />
+		</div>
+	</div>
+</header>
+
+<style>
+	/* 移动端菜单按钮里的两个图标按状态切换 */
+	.nav-icon-close {
+		display: none;
+	}
+
+	[data-nav-toggle][aria-expanded='true'] .nav-icon-menu {
+		display: none;
+	}
+
+	[data-nav-toggle][aria-expanded='true'] .nav-icon-close {
+		display: block;
+	}
+</style>
+
+<script>
+	const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+	const nav = document.querySelector<HTMLElement>('[data-nav]');
+
+	if (toggle && nav) {
+		const setOpen = (open: boolean) => {
+			nav.dataset.open = String(open);
+			toggle.setAttribute('aria-expanded', String(open));
+		};
+
+		setOpen(false);
+		toggle.addEventListener('click', () => setOpen(nav.dataset.open !== 'true'));
+
+		// 点击链接或按 Esc 后收起
+		nav.addEventListener('click', (event) => {
+			if ((event.target as HTMLElement).closest('a')) setOpen(false);
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') setOpen(false);
+		});
+
+		// 从移动端拉宽窗口时，把菜单状态清掉
+		window.matchMedia('(min-width: 861px)').addEventListener('change', (event) => {
+			if (event.matches) setOpen(false);
+		});
+	}
+</script>

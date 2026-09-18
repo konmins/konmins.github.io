@@ -1,0 +1,93 @@
+name: 构建并部署到 GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  # 也可以在仓库的 Actions 页面手动点一次触发
+  workflow_dispatch:
+
+# GITHUB_TOKEN 需要的权限，缺一不可
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署；正在发布的不要被打断
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v7
+
+      # 读仓库的 Pages 配置，拿到站点地址和子路径。
+      # 用官方 action 而不是自己按仓库名拼，好处是以后绑定自定义域名也能自动识别。
+      - name: 配置 Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: 生成 Astro 需要的 SITE_URL / BASE_PATH
+        id: config
+        env:
+          PAGES_ORIGIN: ${{ steps.pages.outputs.origin }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          # origin 形如 https://<用户名>.github.io 或 https://自定义域名
+          if [ -n "$PAGES_ORIGIN" ]; then
+            SITE="$PAGES_ORIGIN"
+          else
+            SITE="https://${GITHUB_REPOSITORY_OWNER}.github.io"
+          fi
+
+          # base_path 形如 "/仓库名"；用户页或自定义域名时是空串。
+          # Astro 的 base 要求以 / 结尾，这里统一补上。
+          if [ -n "$PAGES_BASE_PATH" ]; then
+            BASE="${PAGES_BASE_PATH}/"
+          elif [ "${GITHUB_REPOSITORY#*/}" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then
+            BASE="/"
+          else
+            BASE="/${GITHUB_REPOSITORY#*/}/"
+          fi
+
+          echo "site=$SITE" >> "$GITHUB_OUTPUT"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "站点地址：$SITE"
+          echo "子路径：$BASE"
+
+      - name: 安装 Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+        env:
+          SITE_URL: ${{ steps.config.outputs.site }}
+          BASE_PATH: ${{ steps.config.outputs.base }}
+
+      - name: 上传构建产物
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

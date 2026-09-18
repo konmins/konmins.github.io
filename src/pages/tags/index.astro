@@ -1,0 +1,32 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { collectTags, getPosts } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+const tags = collectTags(posts);
+---
+
+<BaseLayout title="标签" description="按标签浏览全部文章。">
+	<div class="container">
+		<header class="page-head">
+			<h1 class="page-head__title">标签</h1>
+			<p class="page-head__desc">共 {tags.length} 个标签，括号里是文章数。</p>
+		</header>
+
+		{
+			tags.length === 0 ? (
+				<p class="empty-state">还没有任何标签。</p>
+			) : (
+				<div class="tag-cloud">
+					{tags.map((tag) => (
+						<a class="tag-cloud__item" href={withBase(`/tags/${tag.slug}/`)}>
+							#{tag.name}
+							<span class="tag-cloud__count">{tag.count}</span>
+						</a>
+					))}
+				</div>
+			)
+		}
+	</div>
+</BaseLayout>

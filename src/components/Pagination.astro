@@ -1,0 +1,80 @@
+---
+import { withBase } from '@/utils/url';
+import Icon from './Icon.astro';
+
+interface Props {
+	currentPage: number;
+	totalPages: number;
+	/** 形如 '/blog/'，页码会拼成 /blog/2/；第 1 页用 baseUrl 本身 */
+	baseUrl: string;
+}
+
+const { currentPage, totalPages, baseUrl } = Astro.props;
+
+const root = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+function pageHref(page: number): string {
+	return page === 1 ? withBase(root) : withBase(`${root}${page}/`);
+}
+
+/** 生成 1 … 4 5 6 … 12 这样的页码序列 */
+function pageItems(): (number | 'gap')[] {
+	if (totalPages <= 7) {
+		return Array.from({ length: totalPages }, (_, i) => i + 1);
+	}
+
+	const items: (number | 'gap')[] = [1];
+	const start = Math.max(2, currentPage - 1);
+	const end = Math.min(totalPages - 1, currentPage + 1);
+
+	if (start > 2) items.push('gap');
+	for (let i = start; i <= end; i += 1) items.push(i);
+	if (end < totalPages - 1) items.push('gap');
+
+	items.push(totalPages);
+	return items;
+}
+
+const items = pageItems();
+---
+
+{
+	totalPages > 1 && (
+		<nav class="pagination" aria-label="文章分页">
+			<a
+				class:list={['pagination__link', currentPage === 1 && 'pagination__link--disabled']}
+				href={pageHref(Math.max(1, currentPage - 1))}
+				aria-label="上一页"
+				aria-disabled={currentPage === 1}
+			>
+				<Icon name="arrow-left" />
+			</a>
+
+			{items.map((item) =>
+				item === 'gap' ? (
+					<span class="pagination__gap">…</span>
+				) : (
+					<a
+						class="pagination__link"
+						href={pageHref(item)}
+						aria-current={item === currentPage ? 'page' : undefined}
+					>
+						{item}
+					</a>
+				),
+			)}
+
+			<a
+				class:list={[
+					'pagination__link',
+					currentPage === totalPages && 'pagination__link--disabled',
+				]}
+				href={pageHref(Math.min(totalPages, currentPage + 1))}
+				aria-label="下一页"
+				aria-disabled={currentPage === totalPages}
+			>
+				<Icon name="arrow-right" />
+			</a>
+		</nav>
+	)
+}

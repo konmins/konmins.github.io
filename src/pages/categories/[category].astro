@@ -1,0 +1,60 @@
+---
+import type { GetStaticPaths } from 'astro';
+import PostCard from '@/components/PostCard.astro';
+import { CATEGORY_META } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { categorySlug, collectCategories, getPosts, type Post, type Term } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+	const posts = await getPosts();
+	const categories = collectCategories(posts);
+
+	return categories.map((term) => ({
+		params: { category: term.slug },
+		props: {
+			term,
+			categoryPosts: posts.filter((post) => categorySlug(post.data.category) === term.slug),
+		},
+	}));
+};
+
+interface Props {
+	term: Term;
+	categoryPosts: Post[];
+}
+
+const { term, categoryPosts } = Astro.props;
+const meta = CATEGORY_META[term.name];
+---
+
+<BaseLayout
+	title={`分类：${term.name}`}
+	description={meta?.description ?? `分类「${term.name}」下的全部文章，共 ${term.count} 篇。`}
+>
+	<div class="container">
+		<header class="page-head">
+			<nav class="breadcrumb" aria-label="面包屑">
+				<a href={withBase('/categories/')}>分类</a>
+				<span>/</span>
+				<span>{term.name}</span>
+			</nav>
+			<h1 class="page-head__title">
+				<span
+					class="term-card__dot"
+					style={meta ? `background: ${meta.accent}; width: 14px; height: 14px;` : undefined}
+				>
+				</span>
+				{term.name}
+			</h1>
+			<p class="page-head__desc">
+				{meta?.description ?? `该分类下的全部文章。`}
+				（共 {term.count} 篇）
+			</p>
+		</header>
+
+		<div class="post-list">
+			{categoryPosts.map((post) => <PostCard post={post} />)}
+		</div>
+	</div>
+</BaseLayout>

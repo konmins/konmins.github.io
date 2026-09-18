@@ -1,0 +1,64 @@
+---
+import Icon from '@/components/Icon.astro';
+import { NAV } from '@/consts';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPosts } from '@/utils/posts';
+import { withBase } from '@/utils/url';
+
+const posts = await getPosts();
+const recent = posts.slice(0, 5);
+---
+
+<BaseLayout title="页面不存在" description="你要找的页面不在这里。" noindex>
+	<div class="container container--narrow">
+		<header class="page-head">
+			<h1 class="page-head__title">404</h1>
+			<p class="page-head__desc">
+				这个地址下没有内容。可能是链接写错了，也可能是文章改过标题、换了路径。
+			</p>
+		</header>
+
+		<div class="hero__actions" style="margin-bottom: 3rem;">
+			<a class="btn btn--primary" href={withBase('/')}>
+				<Icon name="arrow-left" />
+				回到首页
+			</a>
+			<a class="btn btn--ghost" href={withBase('/search/')}>
+				<Icon name="search" />
+				搜索文章
+			</a>
+		</div>
+
+		<section class="section" style="margin-top: 0;">
+			<div class="section__head">
+				<h2 class="section__title">或者从这里开始</h2>
+			</div>
+			<div class="post-list">
+				{
+					recent.map((post) => (
+						<a class="archive-item" href={withBase(`/blog/${post.id}/`)}>
+							<span class="archive-item__date">{post.data.pubDate.toISOString().slice(5, 10)}</span>
+							<span class="archive-item__title">{post.data.title}</span>
+							<span class="archive-item__cat">{post.data.category}</span>
+						</a>
+					))
+				}
+			</div>
+		</section>
+
+		<section class="section">
+			<div class="section__head">
+				<h2 class="section__title">常用入口</h2>
+			</div>
+			<div class="tag-cloud">
+				{
+					NAV.map((item) => (
+						<a class="tag-cloud__item" href={withBase(item.href)}>
+							{item.label}
+						</a>
+					))
+				}
+			</div>
+		</section>
+	</div>
+</BaseLayout>

@@ -1,0 +1,55 @@
+---
+import { GISCUS } from '@/consts';
+
+// 没有填 repoId / categoryId 时直接不渲染，避免出现一个坏掉的 iframe
+const active = GISCUS.enabled && GISCUS.repoId && GISCUS.categoryId;
+---
+
+<section class="comments" id="comments" aria-label="评论">
+	{
+		active ? (
+			<>
+				<h2 class="comments__title">评论</h2>
+				<div class="giscus" data-giscus />
+				<script
+					is:inline
+					src="https://giscus.app/client.js"
+					data-repo={GISCUS.repo}
+					data-repo-id={GISCUS.repoId}
+					data-category={GISCUS.category}
+					data-category-id={GISCUS.categoryId}
+					data-mapping="pathname"
+					data-strict="0"
+					data-reactions-enabled="1"
+					data-emit-metadata="0"
+					data-input-position="top"
+					data-theme={GISCUS.theme}
+					data-lang="zh-CN"
+					data-loading="lazy"
+					crossorigin="anonymous"
+					async
+				/>
+			</>
+		) : null
+	}
+</section>
+
+{
+	active && (
+		<script>
+			// giscus 里是跨域 iframe，只能通过 postMessage 让它跟随站点主题切换
+			const send = (theme: string) => {
+				const frame = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+				frame?.contentWindow?.postMessage(
+					{ giscus: { setConfig: { theme } } },
+					'https://giscus.app',
+				);
+			};
+
+			window.addEventListener('theme-change', (event) => {
+				const next = (event as CustomEvent<string>).detail;
+				send(next === 'dark' ? 'dark' : 'light');
+			});
+		</script>
+	)
+}
