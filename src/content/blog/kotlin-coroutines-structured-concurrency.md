@@ -1,10 +1,11 @@
 ---
 title: 结构化并发：为什么不该再用 GlobalScope
 description: 从一次并行请求写错导致的「页面关了请求还在跑」说起，讲清 CoroutineScope、Job 层级、异常传播，以及 supervisorScope 到底什么时候用。
-pubDate: 2026-08-22
+pubDate: 2026-11-08
 category: Kotlin
 tags: ['Kotlin', '协程', '并发', 'Android']
 featured: true
+series: Kotlin 协程大白话
 ---
 
 刚接触协程时，我写过这样的代码：
