@@ -2,8 +2,11 @@
 dist/
 .output/
 
-# Astro 生成的内容集合类型
+# Astro / vite dev server 的临时文件
 .astro/
+
+# Kotlin 代码校验脚本的临时工作目录
+.kt-verify/
 
 # 依赖
 node_modules/
