@@ -41,7 +41,7 @@ Android 落地（真实场景）
 
 **为什么取消不能放在最前面？**
 
-取消是整套协程里最难的部分，也是最容易踩坑的部分。如果读者还没理解"结构化并发"，就不理解取消信号是怎么传播的，那篇会变成一堆 API 背诵。所以它必须在结构化并发之后。
+取消是整套协程里最难的部分，也是最容易踩坑的部分。取消信号为什么能从一个协程传到另一个、为什么"取消"不等于"立刻停下"，这些都建立在 Job 的父子关系上——第 03 篇的三件套已经把这个前提铺好了，所以取消篇可以排在阶段二开头。（站内独立的《结构化并发》一文可作补充阅读。）
 
 **为什么 Flow 放在中后期？**
 
@@ -49,7 +49,7 @@ Flow 是"用法层"的东西。读者得先知道协程怎么跑起来、怎么�
 
 **为什么 Android 落地放最后？**
 
-这是系列的"回报篇"。前面 13 篇都在讲机制，这一篇把机制装回真实代码。读者的获得感在这里最强，也最容易转化成收藏和转发。
+这是系列的"回报篇"。前面 10 篇都在讲机制，这一篇把机制装回真实代码。读者的获得感在这里最强，也最容易转化成收藏和转发。
 
 ---
 
@@ -84,10 +84,11 @@ Flow 是"用法层"的东西。读者得先知道协程怎么跑起来、怎么�
 | 01 协程到底是个什么东西 | `kotlin-coroutines-what-is-coroutine.md` | 2026-11-04 |
 | 02 suspend 挂起的到底是什么 | `kotlin-coroutines-suspend-inside.md` | 2026-11-05 |
 | 03 Scope、Job、Dispatcher 三件套 | `kotlin-coroutines-three-pillars.md` | 2026-11-06 |
-| 04 launch、async、run 怎么选 | `kotlin-coroutines-launch-async-run.md` | 2026-11-07 |
-| 05 结构化并发 | `kotlin-coroutines-structured-concurrency.md`（**已有**） | 2026-11-08 |
+| 04 launch、async、run 怎么选 | `kotlin-coroutines-launch-async-run.md` | 2026-11-09 |
 
-> 第 05 篇是站内已有的《结构化并发：为什么不该再用 GlobalScope》，直接纳入系列并调整了发布日期，保证顺序正确。
+> 站内原有的《结构化并发：为什么不该再用 GlobalScope》（`kotlin-coroutines-structured-concurrency.md`，2026-11-08）
+> **已移出系列**（2026-11-09 移除 `series` 字段），回归独立文章。它讲的是协程树与父子关系，
+> 和第 04 篇讲的「异常隔离」互补，文中已互相引用。系列因此定为 **13 篇**。
 
 ### 排版特性（Typecho 没有的）
 
@@ -184,7 +185,9 @@ Flow 是"用法层"的东西。读者得先知道协程怎么跑起来、怎么�
 
 ---
 
-### 第 04 篇 · launch、async、run 怎么选 `⬜ 待写`
+### 第 04 篇 · launch、async、run 怎么选 `✅ 已完成`
+
+> 稿件：`src/content/blog/kotlin-coroutines-launch-async-run.md`（13 个代码块，全部编译并实跑通过）
 
 **大白话切入**：三个函数长得像，返回值类型还不一样，选错了就出 bug。
 
@@ -193,44 +196,53 @@ Flow 是"用法层"的东西。读者得先知道协程怎么跑起来、怎么�
 **要讲清的点**：
 - `launch` 返回 `Job`，不产出结果
 - `async` 返回 `Deferred<T>`，产出结果，**必须在作用域内 await**
-- `run` 是普通函数版，阻塞当前线程直到结束
-- **关键反例**：`async` 创建了却忘了 `await` → 异常被吞
+- `run` 是标准库的普通函数，**不是启动协程**——它同步执行并阻塞当前线程（实测 303ms，线程名 main）
+- 真正会阻塞的是 `runBlocking`
+
+**关键反例（实测数据支撑）**：
+- `async` 不 await，异常去向随作用域而变：
+  - 普通 `coroutineScope` → 取消父作用域，从边界抛出
+  - `supervisorScope` → **完全静默**，躺在 Deferred 里，连日志都没有
+  - `SupervisorJob()` 独立 scope → 交给 `CoroutineExceptionHandler`，业务代码无感
+- **最反直觉的一条**：`await` 了、`try/catch` 了，`coroutineScope` 本身**照样失败**——
+  因为异常发生的那一刻父作用域就已被取消，`await` 只能让异常"可见"，无法"撤回"。
+  想真正隔离错误必须用 `supervisorScope`。
+- 并行请求的真实后果：一个失败会**连坐**另一个（`coroutineScope`），
+  换 `supervisorScope` 才是"该成功的成功、该失败的单独失败"。
 
 ---
 
-## 五、阶段二：用对它，别用错（4 篇）
+## 五、阶段二：用对它，别用错（3 篇）
 
-### 第 05 篇 · 结构化并发：父协程的规矩 `✅ 已有`
+### 第 05 篇 · 取消：为什么停不下来 `🔄 待改`
 
-> 稿件：`src/content/blog/kotlin-coroutines-structured-concurrency.md`（站内已有，已纳入系列）
-> 内容：协程树、父子关系三条规则、`coroutineScope` vs `supervisorScope`、取消是协作式的。
-
-### 第 06 篇 · 取消：为什么停不下来 `🔄 待改`
-
-> 现有深度版稿在 `/Users/konmin/Documents/workbuddy/posts/coroutine-cancellation.md`（3714 中文字，26 个代码块，
+> 现有深度版稿在 `/Users/konmin/Documents/workbuddy/posts/coroutine-cancellation.md`（3530 中文字，26 个代码块，
 > 含 Go/JS/C# 横向对比 + 测试章节）。需要拆成大白话主篇 + 番外。
 
-### 第 07 篇 · 异常处理：错误都去哪了 `⬜ 待写`
+### 第 06 篇 · 异常处理：错误都去哪了 `⬜ 待写`
 
-### 第 08 篇 · withContext 换个线程干活 `⬜ 待写`
+> 第 04 篇已经讲了「异常隔离」的一半（`await` / `try-catch` 与 `supervisorScope` 的区别），
+> 这一篇补上另一半：异常怎么在协程树里传播、`CoroutineExceptionHandler` 什么时候用。
+
+### 第 07 篇 · withContext 换个线程干活 `⬜ 待写`
 
 ---
 
 ## 六、阶段三：异步数据流（3 篇）
 
-### 第 09 篇 · Flow：把回调变成一条流 `⬜ 待写`
-### 第 10 篇 · StateFlow 与 SharedFlow `⬜ 待写`
+### 第 08 篇 · Flow：把回调变成一条流 `⬜ 待写`
+### 第 09 篇 · StateFlow 与 SharedFlow `⬜ 待写`
 > 站内已有 `kotlin-cold-flow-vs-hot-flow.md`，可作交叉引用
 
-### 第 11 篇 · callbackFlow 与老代码共存 `⬜ 待写`
+### 第 10 篇 · callbackFlow 与老代码共存 `⬜ 待写`
 
 ---
 
 ## 七、阶段四：Android 落地（3 篇）
 
-### 第 12 篇 · 生命周期作用域怎么选 `⬜ 待写`
-### 第 13 篇 · 和 Retrofit、Room 怎么配合 `⬜ 待写`
-### 第 14 篇 · 实战：改写一个老页面 `⬜ 待写`
+### 第 11 篇 · 生命周期作用域怎么选 `⬜ 待写`
+### 第 12 篇 · 和 Retrofit、Room 怎么配合 `⬜ 待写`
+### 第 13 篇 · 实战：改写一个老页面 `⬜ 待写`
 
 ---
 
@@ -286,11 +298,11 @@ python /Users/konmin/.workbuddy/skills/tech-blog-writing/scripts/verify_code.py 
 | ✅ 已完成 | 第 01 篇 · 协程到底是个什么东西 |
 | ✅ 已完成 | 第 02 篇 · suspend 挂起的到底是什么 |
 | ✅ 已完成 | 第 03 篇 · Scope、Job、Dispatcher 三件套 |
-| ⬜ 待写 | 第 04 篇 · launch、async、run 怎么选 |
-| ✅ 已完成 | 第 05 篇 · 结构化并发（站内已有，已纳入系列） |
-| 🔄 待改 | 第 06 篇 · 取消（深度版稿在 workbuddy/posts/） |
-| ⬜ 待写 | 第 07 – 14 篇 |
+| ✅ 已完成 | 第 04 篇 · launch、async、run 怎么选（2026-11-09 新写，13 个代码块实跑通过） |
+| 🔄 待改 | 第 05 篇 · 取消（深度版稿在 workbuddy/posts/，3530 字待重排） |
+| ⬜ 待写 | 第 06 – 13 篇 |
 | ⬜ 待写 | 番外 A / B |
+| 🚫 已移出 | 结构化并发（站内旧文，2026-11-09 移除 series 字段，回归独立文章） |
 
 ---
 

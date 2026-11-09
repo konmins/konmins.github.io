@@ -5,7 +5,6 @@ pubDate: 2026-11-08
 category: Kotlin
 tags: ['Kotlin', '协程', '并发', 'Android']
 featured: true
-series: Kotlin 协程大白话
 ---
 
 刚接触协程时，我写过这样的代码：
